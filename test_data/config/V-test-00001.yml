@@ -1,0 +1,12 @@
+inputtype: HermesCSVOut
+numheader: 1
+delimiter: ','
+columntograph:
+    Graph1:
+        graphtype: line
+        title: Graph 1
+        columns:
+            - Date
+            - SumFert
+            - solutionSumFert
+        datecolumn: Date
