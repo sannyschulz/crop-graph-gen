@@ -13,7 +13,8 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
-func SefaultCsvToGraph(inputFile string, configFile string, outputFile string) error {
+// HermesCsvToGraph reads the hermes simulation output file and generates graphs as defined in the config file
+func HermesCsvToGraph(inputFile string, configFile string, outputFile string) error {
 
 	// read config file
 	config, err := ReadConfigFile(configFile)
@@ -40,8 +41,8 @@ func SefaultCsvToGraph(inputFile string, configFile string, outputFile string) e
 			configColumns[column] = -1
 		}
 	}
-
-	existingListOfColumns := map[string]int{}
+	// map column name to index in the csv file
+	mappingColumnToIndex := map[string]int{}
 
 	// read number of header, as defined in the config file
 	for i := 0; i < config.NumHeader; i++ {
@@ -50,51 +51,89 @@ func SefaultCsvToGraph(inputFile string, configFile string, outputFile string) e
 		if err != nil {
 			return err
 		}
+		// for the first header line
 		if i == 0 {
 			for colIndex, colName := range col {
+				// if column is listed in the config file
 				if _, ok := configColumns[colName]; ok {
-					existingListOfColumns[colName] = colIndex
+					// store the index of the column
+					mappingColumnToIndex[colName] = colIndex
 				}
 			}
 		}
 	}
 
 	rowData := map[string][]interface{}{}
-	// read data rows
+	// read data from rows after the header
 	for {
+		// read the row
 		row, err := reader.Read()
 		if err != nil {
 			break
 		}
-		for colName, colIndex := range existingListOfColumns {
+		// for each column in the row check if it is listed in the config file
+		// if yes, store the value to later generate a graph
+		for colName, colIndex := range mappingColumnToIndex {
 			// read the value of the selected column
 			// and store it in the crop graph
 			rowData[colName] = append(rowData[colName], row[colIndex])
 		}
 	}
-
+	// genrate a web page for the graph
+	page := MakePage()
+	// for each graph in the config file generate the graph
 	for _, graph := range config.ColumnToGraph {
-		// 4. generate the crop graph as defined in the config file
-		// list of values for the graph
+		// get all lists of values for the graph
 		values := make([][]interface{}, len(graph.Columns))
 		for i, column := range graph.Columns {
-			if _, ok := existingListOfColumns[column]; !ok {
+			if _, ok := mappingColumnToIndex[column]; !ok {
 				return fmt.Errorf("column %s not found in the input file", column)
 			}
 			values[i] = rowData[column]
 		}
+		// add the graph to the page
+		page = GenerateGraph(page, graph, values)
 
-		GenerateGraph(outputFile, graph, values)
 	}
-	return nil
+	// save the page to the output file
+	err = SavePage(page, outputFile)
+	return err
+}
+
+// MakePage creates a new web page
+func MakePage() *components.Page {
+	// create a new web page
+	page := components.NewPage()
+	return page
+}
+
+// SavePage saves the web page to a file
+func SavePage(page *components.Page, outfile string) error {
+	// check if output file location exists
+	// if not create it
+	outpath := filepath.Dir(outfile)
+	if _, err := os.Stat(outpath); os.IsNotExist(err) {
+		err := os.MkdirAll(outpath, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
+	// save the page to the output file
+	f, err := os.Create(outfile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	err = page.Render(io.MultiWriter(f))
+	return err
 }
 
 // graph generation
-func GenerateGraph(outfile string, graphType GraphDefinition, values [][]interface{}) {
+func GenerateGraph(page *components.Page, graphType GraphDefinition, values [][]interface{}) *components.Page {
+	outPage := page
 	// generate the graph
-	page := components.NewPage()
 	if len(values) == 0 {
-		return
+		return outPage
 	}
 	// extract keys from the first column
 	keys := extractKeys(values[0])
@@ -116,25 +155,10 @@ func GenerateGraph(outfile string, graphType GraphDefinition, values [][]interfa
 		}
 	}
 
-	page.AddCharts(
+	outPage = page.AddCharts(
 		lineMultiData(keys, dates, graphType.Title, columns, values),
 	)
-
-	// check if output file location exists
-	// if not create it
-	// get path from outfile
-	outpath := filepath.Dir(outfile)
-	if _, err := os.Stat(outpath); os.IsNotExist(err) {
-		os.MkdirAll(outpath, os.ModePerm)
-	}
-
-	f, err := os.Create(outfile)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	page.Render(io.MultiWriter(f))
-
+	return outPage
 }
 
 func extractKeys(valueList []interface{}) []int {

@@ -4,9 +4,23 @@ delimiter: ','
 columntograph:
     Graph1:
         graphtype: line
-        title: Graph 1
+        title: Fertilizer
         columns:
             - Date
             - SumFert
             - solutionSumFert
         datecolumn: Date
+    Graph2:
+        graphtype: line
+        title: Nmin by layer
+        columns:
+            - Nmin0-1
+            - Nmin1-2
+            - Nmin2-3
+            - Nmin3-4
+            - Nmin4-5
+            - Nmin5-6
+            - Nmin6-7
+            - Nmin7-8
+            - Nmin8-9
+        datecolumn: ''

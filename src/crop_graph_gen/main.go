@@ -10,6 +10,7 @@ import (
 
 func main() {
 	fmt.Println("crop graph tool")
+	// read command line arguments
 	inputFile := flag.String("input", "", "input file")
 	configFile := flag.String("config", "", "config file")
 	outputFile := flag.String("output", "", "output file")
@@ -33,7 +34,7 @@ func main() {
 	}
 
 	// 1. read the hermes simulation output file
-	err := cropgraph.SefaultCsvToGraph(*inputFile, *configFile, *outputFile)
+	err := cropgraph.HermesCsvToGraph(*inputFile, *configFile, *outputFile)
 	if err != nil {
 		fmt.Println(err)
 	}
