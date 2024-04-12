@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sannyschulz/cropgraph"
+	"github.com/sannyschulz/crop-graph-gen/cropgraph"
 )
 
 func main() {

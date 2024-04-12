@@ -1,4 +1,4 @@
-module github.com/sannyschulz/cropgraph
+module github.com/sannyschulz/crop-graph-gen/cropgraph
 
 go 1.21.5
 
