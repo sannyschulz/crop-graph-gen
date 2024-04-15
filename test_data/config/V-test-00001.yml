@@ -33,3 +33,90 @@ columntograph:
             - LAI
             - Date
         datecolumn: Date
+    Graph4:
+        graphtype: line
+        title: soil Water 
+        columns:
+            - SoilW 1
+            - SoilW 2
+            - SoilW 3
+            - SoilW 4
+            - SoilW 5
+            - SoilW 6
+            - SoilW 7
+            - SoilW 8
+            - SoilW 9
+            - Date
+        datecolumn: Date
+    Graph5:
+        graphtype: circel
+        title: AutomIrrig and Precip
+        columns:
+            - AutomIrrig
+            - Precip
+            - Date
+        datecolumn: DateS
+    Graph6:
+        graphtype: circel
+        title: Wp
+        columns:
+            - WP 1
+            - WP 4
+            - WP 7
+            - Date
+        datecolumn: Date
+    Graph7:
+        graphtype: circel
+        title: FC
+        columns:
+            - FC 1
+            - FC 4
+            - FC 7
+            - Date
+        datecolumn: Date
+    Graph8:
+        graphtype: circel
+        title: stage
+        columns:
+            - Stage
+            - Date
+        datecolumn: Date
+    Graph9:
+        graphtype: DABIDUBI
+        title: Bio time
+        columns:
+            - BiolTime_SumDeg
+            - Date
+        datecolumn: Date
+    Graph10:
+        graphtype: circel
+        title: N crop
+        columns:
+            - N crop
+            - Date
+        datecolumn: Date
+    Graph11:
+        graphtype: circel
+        title: W suffic
+        columns:
+            - W suffic
+            - Date
+        datecolumn: Date
+    Graph12:
+        graphtype: circel
+        title: Poresize
+        columns:
+            - PoreSize 1
+            - PoreSize 4
+            - PoreSize 7
+            - Date
+        datecolumn: Date
+    Graph13:
+        graphtype: circel
+        title: Soillayroot
+        columns:
+            - SoilLayRoot
+            - Date
+        datecolumn: Date
+    
+        
