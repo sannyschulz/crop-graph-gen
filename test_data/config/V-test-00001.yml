@@ -2,7 +2,7 @@ inputtype: HermesCSVOut
 numheader: 1
 delimiter: ','
 columntograph:
-    Graph1:
+    Graph01:
         graphtype: line
         title: Fertilizer
         columns:
@@ -10,7 +10,7 @@ columntograph:
             - SumFert
             - solutionSumFert
         datecolumn: Date
-    Graph2:
+    Graph02:
         graphtype: line
         title: Nmin by layer
         columns:
@@ -24,7 +24,7 @@ columntograph:
             - Nmin7-8
             - Nmin8-9
         datecolumn: ''
-    Graph3:
+    Graph03:
         graphtype: line
         title: Biomass
         columns:
@@ -33,7 +33,7 @@ columntograph:
             - LAI
             - Date
         datecolumn: Date
-    Graph4:
+    Graph04:
         graphtype: line
         title: soil Water 
         columns:
@@ -48,7 +48,7 @@ columntograph:
             - SoilW 9
             - Date
         datecolumn: Date
-    Graph5:
+    Graph05:
         graphtype: circel
         title: AutomIrrig and Precip
         columns:
@@ -56,7 +56,7 @@ columntograph:
             - Precip
             - Date
         datecolumn: Date
-    Graph6:
+    Graph06:
         graphtype: circel
         title: Wp
         columns:
@@ -65,7 +65,7 @@ columntograph:
             - WP 7
             - Date
         datecolumn: Date
-    Graph7:
+    Graph07:
         graphtype: circel
         title: FC
         columns:
@@ -74,14 +74,14 @@ columntograph:
             - FC 7
             - Date
         datecolumn: Date
-    Graph8:
+    Graph08:
         graphtype: circel
         title: stage
         columns:
             - Stage
             - Date
         datecolumn: Date
-    Graph9:
+    Graph09:
         graphtype: DABIDUBI
         title: Bio time
         columns:

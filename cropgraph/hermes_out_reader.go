@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -82,7 +83,17 @@ func HermesCsvToGraph(inputFile string, configFile string, outputFile string) er
 	// genrate a web page for the graph
 	page := MakePage()
 	// for each graph in the config file generate the graph
-	for _, graph := range config.ColumnToGraph {
+
+	// sorted by the order in the config file
+	graphNames := make([]string, 0, len(config.ColumnToGraph))
+	for graphName := range config.ColumnToGraph {
+		graphNames = append(graphNames, graphName)
+	}
+	//sort.Strings(graphNames)
+	slices.Sort(graphNames)
+
+	for _, graphName := range graphNames {
+		graph := config.ColumnToGraph[graphName]
 		// get all lists of values for the graph
 		values := make([][]interface{}, len(graph.Columns))
 		for i, column := range graph.Columns {
