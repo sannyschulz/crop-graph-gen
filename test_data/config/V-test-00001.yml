@@ -55,7 +55,7 @@ columntograph:
             - AutomIrrig
             - Precip
             - Date
-        datecolumn: DateS
+        datecolumn: Date
     Graph6:
         graphtype: circel
         title: Wp
