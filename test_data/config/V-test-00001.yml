@@ -24,3 +24,12 @@ columntograph:
             - Nmin7-8
             - Nmin8-9
         datecolumn: ''
+    Graph3:
+        graphtype: line
+        title: Biomass
+        columns:
+            - abovegrDryM
+            - Yield
+            - LAI
+            - Date
+        datecolumn: Date
