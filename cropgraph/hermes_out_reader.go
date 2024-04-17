@@ -149,25 +149,50 @@ func GenerateGraph(page *components.Page, graphType GraphDefinition, values [][]
 	// extract keys from the first column
 	keys := extractKeys(values[0])
 	var dates []string = nil
-	columns := graphType.Columns
-	if graphType.DateColumn != "" {
-		for i, column := range columns {
-			if column == graphType.DateColumn {
-				// convert dates to string
-				dates = make([]string, len(values[i]))
-				for j, date := range values[i] {
-					dates[j] = date.(string)
+	var columns []string
+	var combinedColumnValues [][]interface{}
+	if graphType.ColumnView != nil {
+		combinedColumnValues = make([][]interface{}, 0, len(graphType.ColumnView))
+		columns = make([]string, 0, len(graphType.ColumnView))
+		// apply operations to the columns
+		for _, operationDefinition := range graphType.ColumnView {
+			// get the column values for the operation
+			columnValues := make([][]interface{}, len(operationDefinition.Columns))
+			for i, column := range operationDefinition.Columns {
+				for j, col := range graphType.Columns {
+					if col == column {
+						columnValues[i] = values[j]
+						break
+					}
 				}
-				// remove date column from columns
-				values = append(values[:i], values[i+1:]...)
-				columns = append(columns[:i], columns[i+1:]...)
-				break
+			}
+			// apply the operation to the column values
+			newColumnValues := HandleColumnViewOperation(operationDefinition, columnValues)
+			combinedColumnValues = append(combinedColumnValues, newColumnValues)
+			columns = append(columns, operationDefinition.Name)
+		}
+	} else {
+		columns = graphType.Columns
+		combinedColumnValues = values
+		if graphType.DateColumn != "" {
+			for i, column := range columns {
+				if column == graphType.DateColumn {
+					// convert dates to string
+					dates = make([]string, len(combinedColumnValues[i]))
+					for j, date := range combinedColumnValues[i] {
+						dates[j] = date.(string)
+					}
+					// remove date column from columns
+					combinedColumnValues = append(combinedColumnValues[:i], combinedColumnValues[i+1:]...)
+					columns = append(columns[:i], columns[i+1:]...)
+					break
+				}
 			}
 		}
 	}
 
 	outPage = page.AddCharts(
-		lineMultiData(keys, dates, graphType.Title, columns, values),
+		lineMultiData(keys, dates, graphType.Title, columns, combinedColumnValues),
 	)
 	return outPage
 }

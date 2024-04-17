@@ -18,6 +18,33 @@ type Config struct {
 	ColumnToGraph map[string]GraphDefinition
 }
 
+type GraphDefinition struct {
+	// type of the graph
+	GraphType string
+	// title of the graph
+	Title string
+	// names of the columns to be plotted
+	Columns []string
+	// name of Date column
+	DateColumn string
+	// operation to be applied to the columns
+	ColumnView []OperationDefinition `yaml:",omitempty"`
+}
+
+type OperationDefinition struct {
+	// type of the operation
+	// OperationType string
+	Operation string
+	// name of the column to be operated
+	Name string
+	// multiply factor
+	Multiply float64 `yaml:",omitempty"`
+	// names of the columns to affected by the operation
+	Columns []string
+	// operation parameters
+	Parameters map[string]interface{} `yaml:",omitempty"`
+}
+
 func ReadConfigFile(configFile string) (*Config, error) {
 	// read the config file from yml file
 	fileData, err := os.ReadFile(configFile)
@@ -39,17 +66,6 @@ func ReadConfigFile(configFile string) (*Config, error) {
 	return &config, nil
 }
 
-type GraphDefinition struct {
-	// type of the graph
-	GraphType string
-	// title of the graph
-	Title string
-	// names of the columns to be plotted
-	Columns []string
-	// name of Date column
-	DateColumn string
-}
-
 // write default config file
 func WriteDefaultConfigFile(configFile string) error {
 	config := Config{
@@ -62,6 +78,15 @@ func WriteDefaultConfigFile(configFile string) error {
 				Title:      "Graph 1",
 				Columns:    []string{"Column1", "Column2"},
 				DateColumn: "Date",
+				ColumnView: []OperationDefinition{
+					{
+						Operation:  "sum",
+						Name:       "ColumnSum",
+						Columns:    []string{"Column2", "Column1"},
+						Parameters: map[string]interface{}{},
+						Multiply:   1.0,
+					},
+				},
 			},
 		},
 	}
