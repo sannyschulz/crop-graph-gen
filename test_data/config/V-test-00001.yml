@@ -47,7 +47,35 @@ columntograph:
             - SoilW 8
             - SoilW 9
             - Date
-        datecolumn: Date
+        columnview: 
+            - operation: sum
+              name: soil 1-3
+              multiply: 100
+              columns:
+                - SoilW 1
+                - SoilW 2
+                - SoilW 3
+            - operation: sum
+              name: soil 4-6
+              columns:
+                - SoilW 4
+                - SoilW 5
+                - SoilW 6
+            - operation: avg
+              name: soil 7-9
+              columns:
+                - SoilW 7
+                - SoilW 8
+                - SoilW 9
+            - operation: diff
+              name: soil difference 7-8
+              columns:
+                - SoilW 7
+                - SoilW 8
+            - operation: dailydifference
+              name: soil daily difference 1
+              columns:
+                - SoilW 1
     Graph05:
         graphtype: circel
         title: AutomIrrig and Precip
@@ -55,6 +83,18 @@ columntograph:
             - AutomIrrig
             - Precip
             - Date
+        columnview: 
+            - operation: none
+              name: AutomIrrig in mm
+              multiply: 100
+              columns:
+                - AutomIrrig
+            - operation: none
+              name: Precip in mm
+              multiply: 100
+              columns:
+                - Precip
+                
         datecolumn: Date
     Graph06:
         graphtype: circel
