@@ -31,6 +31,13 @@ func sumOperation(columnValues [][]interface{}) []interface{} {
 	// as a result, you should have one new slice of daily sums
 	newColumnValues := make([]interface{}, len(columnValues[0]))
 
+	for j := 0; j < len(columnValues[0]); j++ {
+		sum := 0.0
+		for i := 0; i < len(columnValues); i++ {
+			sum = sum + AsFloat(columnValues[i][j])
+		}
+		newColumnValues[j] = sum
+	}
 	return newColumnValues
 }
 
