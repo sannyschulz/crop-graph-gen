@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strconv"
+	"time"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/components"
@@ -190,10 +191,17 @@ func GenerateGraph(page *components.Page, graphType GraphDefinition, values [][]
 			}
 		}
 	}
+	switch graphType.GraphType {
+	case "line":
+		outPage = page.AddCharts(
+			lineMultiData(keys, dates, graphType.Title, columns, combinedColumnValues),
+		)
+	case "ThemeRiver":
+		outPage = page.AddCharts(
+			ThemeRiverMultiData(keys, dates, graphType.Title, columns, combinedColumnValues),
+		)
+	}
 
-	outPage = page.AddCharts(
-		lineMultiData(keys, dates, graphType.Title, columns, combinedColumnValues),
-	)
 	return outPage
 }
 
@@ -222,6 +230,81 @@ func lineMultiData(keys []int, dates []string, graphName string, columns []strin
 	return line
 }
 
+func ThemeRiverMultiData(keys []int, dates []string, graphName string, columns []string, values [][]interface{}) *charts.ThemeRiver {
+	themeRiver := charts.NewThemeRiver()
+	themeRiver.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{
+			Title: graphName,
+		}),
+		charts.WithInitializationOpts(opts.Initialization{
+			Theme: "chalk",
+		}),
+		// charts.WithGridOpts(
+		// 	opts.Grid{
+		// 		Left:         "5%",
+		// 		Right:        "15%",
+		// 		Bottom:       "10%",
+		// 		Top:          "10%",
+		// 		ContainLabel: true,
+		// 	},
+		// ),
+		charts.WithLegendOpts(opts.Legend{Show: true,
+			Right: "15%",
+			Top:   "5%",
+			Align: "left",
+		}),
+		charts.WithSingleAxisOpts(opts.SingleAxis{
+			Type:   "time",
+			Bottom: "10%",
+		}),
+		charts.WithTooltipOpts(opts.Tooltip{
+			Trigger: "axis",
+			Show:    true,
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:  "inside",
+			Start: 0,
+			End:   100,
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:  "slider",
+			Start: 50,
+			End:   100,
+		}),
+	)
+	if dates == nil {
+		dates = make([]string, len(keys))
+		for i, key := range keys {
+			dates[i] = strconv.Itoa(key)
+		}
+	}
+
+	themeRiver.AddSeries("themeRiver", generateItemTripple(dates, values, columns))
+	return themeRiver
+}
+
+func generateItemTripple(dates []string, values [][]interface{}, columns []string) []opts.ThemeRiverData {
+
+	items := make([]opts.ThemeRiverData, 0, len(dates)*len(columns))
+
+	for i, column := range columns {
+		for j, date := range dates {
+			// {"2015/11/28", 10, "DD"},
+			// convert current date string to new date format
+			dateTime, _ := time.Parse("02.01.2006", date)
+			dateFormated := dateTime.Format("2006/01/02")
+
+			valueAsFloat := AsFloat(values[i][j])
+			items = append(items, opts.ThemeRiverData{
+				Date:  dateFormated,
+				Value: valueAsFloat,
+				Name:  column,
+			})
+		}
+	}
+	return items
+}
+
 func generateItems(keys []int, values []interface{}) []opts.LineData {
 
 	items := make([]opts.LineData, 0, len(keys))
@@ -240,18 +323,22 @@ func makeMultiLine(title string) *charts.Line {
 			Title: title,
 		}),
 		charts.WithInitializationOpts(opts.Initialization{
-			Theme: "shine",
+			Theme: "chalk",
 		}),
-		charts.WithLegendOpts(opts.Legend{Show: true}),
+		charts.WithLegendOpts(opts.Legend{Show: true,
+			Right: "15%",
+			Top:   "5%",
+			Align: "left",
+		}),
 		charts.WithDataZoomOpts(opts.DataZoom{
 			Type:       "inside",
-			Start:      50,
+			Start:      0,
 			End:        100,
 			XAxisIndex: []int{0},
 		}),
 		charts.WithDataZoomOpts(opts.DataZoom{
 			Type:       "slider",
-			Start:      50,
+			Start:      0,
 			End:        100,
 			XAxisIndex: []int{0},
 		}),

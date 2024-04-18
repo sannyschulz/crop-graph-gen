@@ -11,7 +11,7 @@ columntograph:
             - solutionSumFert
         datecolumn: Date
     Graph02:
-        graphtype: line
+        graphtype: ThemeRiver
         title: Nmin by layer
         columns:
             - Nmin0-1
@@ -23,7 +23,8 @@ columntograph:
             - Nmin6-7
             - Nmin7-8
             - Nmin8-9
-        datecolumn: ''
+            - Date
+        datecolumn: 'Date'
     Graph03:
         graphtype: line
         title: Biomass
@@ -77,7 +78,7 @@ columntograph:
               columns:
                 - SoilW 1
     Graph05:
-        graphtype: circel
+        graphtype: line
         title: AutomIrrig and Precip
         columns:
             - AutomIrrig
@@ -97,7 +98,7 @@ columntograph:
                 
         datecolumn: Date
     Graph06:
-        graphtype: circel
+        graphtype: line
         title: Wp
         columns:
             - WP 1
@@ -115,35 +116,35 @@ columntograph:
             - Date
         datecolumn: Date
     Graph08:
-        graphtype: circel
+        graphtype: line
         title: stage
         columns:
             - Stage
             - Date
         datecolumn: Date
     Graph09:
-        graphtype: DABIDUBI
+        graphtype: line
         title: Bio time
         columns:
             - BiolTime_SumDeg
             - Date
         datecolumn: Date
     Graph10:
-        graphtype: circel
+        graphtype: line
         title: N crop
         columns:
             - N crop
             - Date
         datecolumn: Date
     Graph11:
-        graphtype: circel
+        graphtype: line
         title: W suffic
         columns:
             - W suffic
             - Date
         datecolumn: Date
     Graph12:
-        graphtype: circel
+        graphtype: line
         title: Poresize
         columns:
             - PoreSize 1
@@ -152,7 +153,7 @@ columntograph:
             - Date
         datecolumn: Date
     Graph13:
-        graphtype: circel
+        graphtype: line
         title: Soillayroot
         columns:
             - SoilLayRoot
