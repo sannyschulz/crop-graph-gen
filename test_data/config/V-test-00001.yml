@@ -1,6 +1,7 @@
 inputtype: HermesCSVOut
 numheader: 1
 delimiter: ','
+theme: vintage
 columntograph:
     Graph01:
         graphtype: line
@@ -107,7 +108,7 @@ columntograph:
             - Date
         datecolumn: Date
     Graph07:
-        graphtype: circel
+        graphtype: line
         title: FC
         columns:
             - FC 1

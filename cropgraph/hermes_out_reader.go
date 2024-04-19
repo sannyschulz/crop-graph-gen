@@ -104,7 +104,7 @@ func HermesCsvToGraph(inputFile string, configFile string, outputFile string) er
 			values[i] = rowData[column]
 		}
 		// add the graph to the page
-		page = GenerateGraph(page, graph, values)
+		page = GenerateGraph(page, graph, config.Theme, values)
 
 	}
 	// save the page to the output file
@@ -141,7 +141,7 @@ func SavePage(page *components.Page, outfile string) error {
 }
 
 // graph generation
-func GenerateGraph(page *components.Page, graphType GraphDefinition, values [][]interface{}) *components.Page {
+func GenerateGraph(page *components.Page, graphType GraphDefinition, theme string, values [][]interface{}) *components.Page {
 	outPage := page
 	// generate the graph
 	if len(values) == 0 {
@@ -191,18 +191,35 @@ func GenerateGraph(page *components.Page, graphType GraphDefinition, values [][]
 			}
 		}
 	}
+	// graph style
+	graphStyle := graphStyle{
+		title: graphType.Title,
+		theme: theme,
+	}
+
 	switch graphType.GraphType {
 	case "line":
 		outPage = page.AddCharts(
-			lineMultiData(keys, dates, graphType.Title, columns, combinedColumnValues),
+			lineMultiData(keys, dates, graphStyle, columns, combinedColumnValues),
 		)
 	case "ThemeRiver":
 		outPage = page.AddCharts(
-			ThemeRiverMultiData(keys, dates, graphType.Title, columns, combinedColumnValues),
+			themeRiverMultiData(keys, dates, graphStyle, columns, combinedColumnValues),
 		)
+	case "bar3d":
+		outPage = page.AddCharts(
+			Bar3D(keys, dates, graphStyle, columns, combinedColumnValues),
+		)
+	default:
+		fmt.Println("Graph type ", graphType.GraphType, " not supported")
 	}
 
 	return outPage
+}
+
+type graphStyle struct {
+	title string
+	theme string
 }
 
 func extractKeys(valueList []interface{}) []int {
@@ -213,9 +230,9 @@ func extractKeys(valueList []interface{}) []int {
 	return keys
 }
 
-func lineMultiData(keys []int, dates []string, graphName string, columns []string, values [][]interface{}) *charts.Line {
+func lineMultiData(keys []int, dates []string, graphStyle graphStyle, columns []string, values [][]interface{}) *charts.Line {
 
-	line := makeMultiLine(graphName)
+	line := makeMultiLine(graphStyle)
 
 	if dates == nil {
 		dates = make([]string, len(keys))
@@ -230,48 +247,8 @@ func lineMultiData(keys []int, dates []string, graphName string, columns []strin
 	return line
 }
 
-func ThemeRiverMultiData(keys []int, dates []string, graphName string, columns []string, values [][]interface{}) *charts.ThemeRiver {
-	themeRiver := charts.NewThemeRiver()
-	themeRiver.SetGlobalOptions(
-		charts.WithTitleOpts(opts.Title{
-			Title: graphName,
-		}),
-		charts.WithInitializationOpts(opts.Initialization{
-			Theme: "chalk",
-		}),
-		// charts.WithGridOpts(
-		// 	opts.Grid{
-		// 		Left:         "5%",
-		// 		Right:        "15%",
-		// 		Bottom:       "10%",
-		// 		Top:          "10%",
-		// 		ContainLabel: true,
-		// 	},
-		// ),
-		charts.WithLegendOpts(opts.Legend{Show: true,
-			Right: "15%",
-			Top:   "5%",
-			Align: "left",
-		}),
-		charts.WithSingleAxisOpts(opts.SingleAxis{
-			Type:   "time",
-			Bottom: "10%",
-		}),
-		charts.WithTooltipOpts(opts.Tooltip{
-			Trigger: "axis",
-			Show:    true,
-		}),
-		charts.WithDataZoomOpts(opts.DataZoom{
-			Type:  "inside",
-			Start: 0,
-			End:   100,
-		}),
-		charts.WithDataZoomOpts(opts.DataZoom{
-			Type:  "slider",
-			Start: 50,
-			End:   100,
-		}),
-	)
+func themeRiverMultiData(keys []int, dates []string, graphStyle graphStyle, columns []string, values [][]interface{}) *charts.ThemeRiver {
+	themeRiver := makeThemeRiver(graphStyle)
 	if dates == nil {
 		dates = make([]string, len(keys))
 		for i, key := range keys {
@@ -281,6 +258,39 @@ func ThemeRiverMultiData(keys []int, dates []string, graphName string, columns [
 
 	themeRiver.AddSeries("themeRiver", generateItemTripple(dates, values, columns))
 	return themeRiver
+}
+
+func Bar3D(keys []int, dates []string, graphStyle graphStyle, columns []string, values [][]interface{}) *charts.Bar3D {
+	bar3d := makeBar3D(graphStyle)
+	if dates == nil {
+		dates = make([]string, len(keys))
+		for i, key := range keys {
+			dates[i] = strconv.Itoa(key)
+		}
+	}
+	bar3d.AddSeries("bar3d", generateItemBar3D(dates, values, columns))
+	return bar3d
+}
+func generateItemBar3D(dates []string, values [][]interface{}, columns []string) []opts.Chart3DData {
+
+	items := make([]opts.Chart3DData, 0, len(dates)*len(columns))
+
+	for i, column := range columns {
+		for j, date := range dates {
+			// {"2015/11/28", 10, "DD"},
+			// convert current date string to new date format
+			dateTime, _ := time.Parse("02.01.2006", date)
+			dateFormated := dateTime.Format("2006/01/02")
+
+			valueAsFloat := AsFloat(values[i][j])
+			items = append(items, opts.Chart3DData{
+				Name:  column,
+				Value: []interface{}{dateFormated, valueAsFloat},
+			})
+		}
+	}
+	return items
+
 }
 
 func generateItemTripple(dates []string, values [][]interface{}, columns []string) []opts.ThemeRiverData {
@@ -316,14 +326,50 @@ func generateItems(keys []int, values []interface{}) []opts.LineData {
 	return items
 }
 
-func makeMultiLine(title string) *charts.Line {
+func makeThemeRiver(graphStyle graphStyle) *charts.ThemeRiver {
+	themeRiver := charts.NewThemeRiver()
+	themeRiver.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{
+			Title: graphStyle.title,
+		}),
+		charts.WithInitializationOpts(opts.Initialization{
+			Theme: graphStyle.theme,
+		}),
+		charts.WithLegendOpts(opts.Legend{Show: true,
+			Right: "15%",
+			Top:   "5%",
+			Align: "left",
+		}),
+		charts.WithSingleAxisOpts(opts.SingleAxis{
+			Type:   "time",
+			Bottom: "10%",
+		}),
+		charts.WithTooltipOpts(opts.Tooltip{
+			Trigger: "axis",
+			Show:    true,
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:  "inside",
+			Start: 0,
+			End:   100,
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:  "slider",
+			Start: 50,
+			End:   100,
+		}),
+	)
+	return themeRiver
+}
+
+func makeMultiLine(graphStyle graphStyle) *charts.Line {
 	line := charts.NewLine()
 	line.SetGlobalOptions(
 		charts.WithTitleOpts(opts.Title{
-			Title: title,
+			Title: graphStyle.title,
 		}),
 		charts.WithInitializationOpts(opts.Initialization{
-			Theme: "chalk",
+			Theme: graphStyle.theme,
 		}),
 		charts.WithLegendOpts(opts.Legend{Show: true,
 			Right: "15%",
@@ -344,4 +390,29 @@ func makeMultiLine(title string) *charts.Line {
 		}),
 	)
 	return line
+}
+
+func makeBar3D(graphStyle graphStyle) *charts.Bar3D {
+	bar3d := charts.NewBar3D()
+	bar3d.SetGlobalOptions(
+		charts.WithTitleOpts(opts.Title{
+			Title: graphStyle.title,
+		}),
+		charts.WithInitializationOpts(opts.Initialization{
+			Theme: graphStyle.theme,
+		}),
+		charts.WithVisualMapOpts(opts.VisualMap{
+			Calculable: true,
+			Max:        100,
+			InRange: &opts.VisualMapInRange{
+				Color: []string{"#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#ffffbf", "#fee090", "#fdae61", "#f46d43", "#d73027", "#a50026"},
+			},
+		}),
+		charts.WithTooltipOpts(opts.Tooltip{
+			Show:      true,
+			Trigger:   "item",
+			Formatter: "{a} <br/>{b} <br/>{c}",
+		}),
+	)
+	return bar3d
 }

@@ -14,6 +14,8 @@ type Config struct {
 	NumHeader int
 	// delimiter of the input file (e.g. tab, comma, space)
 	Delimiter string
+	// theme of the graph
+	Theme string `yaml:",omitempty"`
 	// selected names of the columns
 	ColumnToGraph map[string]GraphDefinition
 }
@@ -56,6 +58,7 @@ func ReadConfigFile(configFile string) (*Config, error) {
 		InputType:     "HermesCSVOut",
 		NumHeader:     1,
 		Delimiter:     ",",
+		Theme:         "calk",
 		ColumnToGraph: map[string]GraphDefinition{},
 	}
 	err = yaml.Unmarshal(fileData, &config)
