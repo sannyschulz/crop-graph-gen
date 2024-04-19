@@ -32,7 +32,6 @@ columntograph:
         columns:
             - abovegrDryM
             - Yield
-            - LAI
             - Date
         datecolumn: Date
     Graph04:
@@ -160,5 +159,10 @@ columntograph:
             - SoilLayRoot
             - Date
         datecolumn: Date
-    
-        
+    Graph14:
+        graphtype: line
+        title: LAI
+        columns:
+            - LAI
+            - Date
+        datecolumn: Date
