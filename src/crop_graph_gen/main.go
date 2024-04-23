@@ -12,6 +12,7 @@ func main() {
 	fmt.Println("crop graph tool")
 	// read command line arguments
 	inputFile := flag.String("input", "", "input file")
+	batchFile := flag.String("batch", "", "batch file")
 	configFile := flag.String("config", "", "config file")
 	outputFile := flag.String("output", "", "output file")
 	flag.Parse()
@@ -28,15 +29,31 @@ func main() {
 		cropgraph.WriteDefaultConfigFile(*configFile)
 		return
 	}
-	if *inputFile == "" {
+
+	if *inputFile == "" && *batchFile == "" {
 		fmt.Println("no input file given")
 		return
 	}
+	if *batchFile != "" {
+		// a batch file contains a list of input and output files as comma separated csv file
+		// read the batch file and process each line
+		err := cropgraph.BatchFileToGraph(*batchFile, *configFile)
+		if err != nil {
+			fmt.Println(err)
+		}
+	} else {
 
-	// 1. read the hermes simulation output file
-	err := cropgraph.HermesCsvToGraph(*inputFile, *configFile, *outputFile)
-	if err != nil {
-		fmt.Println(err)
+		// read config
+		config, err := cropgraph.ReadConfigFile(*configFile)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		// read the hermes simulation output file
+		err = cropgraph.HermesCsvToGraph(*inputFile, config, *outputFile)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
-
 }

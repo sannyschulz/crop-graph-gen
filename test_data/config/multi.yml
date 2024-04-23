@@ -1,0 +1,20 @@
+inputtype: HermesCSVOut
+numheader: 2
+delimiter: ','
+theme: vintage
+multifiles: true 
+columntograph:
+    Graph01:
+        graphtype: kline
+        title: Yield
+        columns:
+            - Date
+            - Yield
+        datecolumn: Date
+    Graph02:
+        graphtype: kline
+        title: Biomass
+        columns:
+            - Date
+            - abovegrDryM
+        datecolumn: Date

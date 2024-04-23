@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
@@ -16,71 +17,13 @@ import (
 )
 
 // HermesCsvToGraph reads the hermes simulation output file and generates graphs as defined in the config file
-func HermesCsvToGraph(inputFile string, configFile string, outputFile string) error {
+func HermesCsvToGraph(inputFile string, config *Config, outputFile string) error {
 
-	// read config file
-	config, err := ReadConfigFile(configFile)
+	rowData, mappingColumnToIndex, err := ReadFileData(inputFile, *config)
 	if err != nil {
 		return err
 	}
 
-	// Read the hermes simulation output file
-	file, err := os.Open(inputFile)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// go csv reader
-	// https://golang.org/pkg/encoding/csv/
-	reader := csv.NewReader(file)
-	reader.Comma = rune(config.Delimiter[0])
-
-	// list all required columns from the config file
-	configColumns := map[string]int{}
-	for _, graph := range config.ColumnToGraph {
-		for _, column := range graph.Columns {
-			configColumns[column] = -1
-		}
-	}
-	// map column name to index in the csv file
-	mappingColumnToIndex := map[string]int{}
-
-	// read number of header, as defined in the config file
-	for i := 0; i < config.NumHeader; i++ {
-
-		col, err := reader.Read()
-		if err != nil {
-			return err
-		}
-		// for the first header line
-		if i == 0 {
-			for colIndex, colName := range col {
-				// if column is listed in the config file
-				if _, ok := configColumns[colName]; ok {
-					// store the index of the column
-					mappingColumnToIndex[colName] = colIndex
-				}
-			}
-		}
-	}
-
-	rowData := map[string][]interface{}{}
-	// read data from rows after the header
-	for {
-		// read the row
-		row, err := reader.Read()
-		if err != nil {
-			break
-		}
-		// for each column in the row check if it is listed in the config file
-		// if yes, store the value to later generate a graph
-		for colName, colIndex := range mappingColumnToIndex {
-			// read the value of the selected column
-			// and store it in the crop graph
-			rowData[colName] = append(rowData[colName], row[colIndex])
-		}
-	}
 	// genrate a web page for the graph
 	page := MakePage()
 	// for each graph in the config file generate the graph
@@ -110,6 +53,283 @@ func HermesCsvToGraph(inputFile string, configFile string, outputFile string) er
 	// save the page to the output file
 	err = SavePage(page, outputFile)
 	return err
+}
+
+func BatchFileToGraph(batchFile string, configFile string) error {
+	// read config file
+	config, err := ReadConfigFile(configFile)
+	if err != nil {
+		return err
+	}
+
+	// Read the batch file
+	file, err := os.Open(batchFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// go csv reader
+	// https://golang.org/pkg/encoding/csv/
+	reader := csv.NewReader(file)
+	reader.Comma = rune(config.Delimiter[0])
+	if config.MultiFiles {
+		outToInputFile := map[string][]string{}
+		currentOUtputFile := ""
+		for {
+			// read the row
+			row, err := reader.Read()
+			if err != nil {
+				break
+			}
+			// read the input and output file from the batch file
+			if len(row) < 1 {
+				return fmt.Errorf("batch file must have at least an input file")
+			}
+
+			inputFile := row[0]
+			outputfile := currentOUtputFile
+			if row[1] != "" {
+				outputfile = row[1]
+				currentOUtputFile = outputfile
+			}
+			if outputfile == "" {
+				return fmt.Errorf("output file must be given")
+			}
+
+			if _, ok := outToInputFile[outputfile]; !ok {
+				outToInputFile[outputfile] = []string{}
+			}
+			outToInputFile[outputfile] = append(outToInputFile[outputfile], inputFile)
+		}
+
+		for outputFile, inputFiles := range outToInputFile {
+			// make graphs from multiple input files
+			err = MultiFileToGraph(inputFiles, config, outputFile)
+			if err != nil {
+				return err
+			}
+
+		}
+
+	} else {
+		for {
+			// read the row
+			row, err := reader.Read()
+			if err != nil {
+				break
+			}
+			// read the input and output file from the batch file
+			if len(row) < 2 {
+				return fmt.Errorf("batch file must have at least two columns")
+			}
+			inputFile := row[0]
+			outputFile := row[1]
+			// generate the graph
+			err = HermesCsvToGraph(inputFile, config, outputFile)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func MultiFileToGraph(inputFiles []string, config *Config, outputFile string) error {
+
+	// sorted by the order in the config file
+	graphNames := make([]string, 0, len(config.ColumnToGraph))
+	for graphName := range config.ColumnToGraph {
+		graphNames = append(graphNames, graphName)
+	}
+	//sort.Strings(graphNames)
+	slices.Sort(graphNames)
+
+	// read all input files
+	rowDataList := make([]map[string][]interface{}, 0, len(inputFiles))
+	mappingColumnToIndexList := make([]map[string]int, 0, len(inputFiles))
+	for _, inputFile := range inputFiles {
+		rowData, mappingColumnToIndex, err := ReadFileData(inputFile, *config)
+		if err != nil {
+			return err
+		}
+		rowDataList = append(rowDataList, rowData)
+		mappingColumnToIndexList = append(mappingColumnToIndexList, mappingColumnToIndex)
+	}
+
+	// genrate a web page for the graph
+	page := MakePage()
+	// for each graph in the config file generate the graph
+
+	type klineEntry struct {
+		open  float64
+		close float64
+		low   float64
+		high  float64
+	}
+
+	for _, graphName := range graphNames {
+		graph := config.ColumnToGraph[graphName]
+		if graph.GraphType == "kline" {
+			// merge data for kline graph
+			// requires a list of (date, open, close, low, high) values
+			// number of columns must be 1 + date column
+			dates := []string{}
+			if graph.DateColumn != "" {
+				if col, ok := rowDataList[0][graph.DateColumn]; ok {
+					for _, date := range col {
+						dates = append(dates, date.(string))
+					}
+				}
+			}
+			if (len(dates) == 0 && len(graph.Columns) != 1) || (len(dates) > 0 && len(graph.Columns) != 2) {
+				return fmt.Errorf("kline graph requires one data column")
+			}
+			// number of entries
+			numEntries := len(dates)
+
+			// get data column
+			columnName := graph.Columns[0]
+			for _, colname := range graph.Columns {
+				if colname != graph.DateColumn {
+					columnName = colname
+					break
+				}
+			}
+			byDate := make([][]float64, numEntries)
+			for i := range byDate {
+				byDate[i] = make([]float64, len(rowDataList))
+			}
+
+			for i, rowData := range rowDataList {
+				if _, ok := mappingColumnToIndexList[i][columnName]; !ok {
+					return fmt.Errorf("column %s not found in the input file", columnName)
+				}
+				for j, value := range rowData[columnName] {
+					byDate[j][i] = AsFloat(value)
+				}
+			}
+			// calculate standard deviation and average
+			averages := make([]float64, numEntries)
+			low := make([]float64, numEntries)
+			// init low with max value
+			for i := range low {
+				low[i] = math.MaxFloat64
+			}
+			high := make([]float64, numEntries)
+			numFiles := float64(len(rowDataList))
+			for i := range byDate {
+				if i == 309 {
+					fmt.Println("here")
+				}
+				for _, value := range byDate[i] {
+					if value < low[i] {
+						low[i] = value
+					}
+					if value > high[i] {
+						high[i] = value
+					}
+					averages[i] += value
+				}
+				averages[i] /= numFiles
+			}
+			// calculate standard deviation
+			stdDevs := make([]float64, numEntries)
+			for i := range byDate {
+				for _, value := range byDate[i] {
+					stdDevs[i] += (value - averages[i]) * (value - averages[i])
+				}
+				stdDevs[i] = stdDevs[i] / numFiles
+				stdDevs[i] = math.Sqrt(stdDevs[i])
+			}
+
+			klineEntries := make([]klineEntry, 0, numEntries)
+			for i := range averages {
+				klineEntries = append(klineEntries, klineEntry{
+					open:  averages[i] - stdDevs[i],
+					close: averages[i] + stdDevs[i],
+					low:   low[i],
+					high:  high[i]})
+			}
+			kline := makeKline(graphStyle{title: graph.Title, theme: config.Theme})
+			klineEntriesOpt := make([]opts.KlineData, 0, len(klineEntries))
+			for i := 0; i < len(klineEntries); i++ {
+				// entry to [4]float
+				val := []float64{klineEntries[i].open, klineEntries[i].close, klineEntries[i].low, klineEntries[i].high}
+				klineEntriesOpt = append(klineEntriesOpt, opts.KlineData{Value: val})
+			}
+
+			kline.SetXAxis(dates).AddSeries("kline", klineEntriesOpt)
+			page = page.AddCharts(kline)
+
+		}
+
+	}
+	// save the page to the output file
+	err := SavePage(page, outputFile)
+	return err
+}
+
+func ReadFileData(inputFile string, config Config) (map[string][]interface{}, map[string]int, error) {
+	// Read the hermes simulation output file
+	file, err := os.Open(inputFile)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer file.Close()
+
+	// go csv reader
+	// https://golang.org/pkg/encoding/csv/
+	reader := csv.NewReader(file)
+	reader.Comma = rune(config.Delimiter[0])
+
+	// list all required columns from the config file
+	configColumns := map[string]int{}
+	for _, graph := range config.ColumnToGraph {
+		for _, column := range graph.Columns {
+			configColumns[column] = -1
+		}
+	}
+	// map column name to index in the csv file
+	mappingColumnToIndex := map[string]int{}
+
+	// read number of header, as defined in the config file
+	for i := 0; i < config.NumHeader; i++ {
+
+		col, err := reader.Read()
+		if err != nil {
+			return nil, nil, err
+		}
+		// for the first header line
+		if i == 0 {
+			for colIndex, colName := range col {
+				// if column is listed in the config file
+				if _, ok := configColumns[colName]; ok {
+					// store the index of the column
+					mappingColumnToIndex[colName] = colIndex
+				}
+			}
+		}
+	}
+
+	rowData := map[string][]interface{}{}
+	// read data from rows after the header
+	for {
+		// read the row
+		row, err := reader.Read()
+		if err != nil {
+			break
+		}
+		// for each column in the row check if it is listed in the config file
+		// if yes, store the value to later generate a graph
+		for colName, colIndex := range mappingColumnToIndex {
+			// read the value of the selected column
+			// and store it in the crop graph
+			rowData[colName] = append(rowData[colName], row[colIndex])
+		}
+	}
+
+	return rowData, mappingColumnToIndex, nil
 }
 
 // MakePage creates a new web page
@@ -414,4 +634,32 @@ func makebar3DShading(graphStyle graphStyle) *charts.Bar3D {
 		}),
 	)
 	return bar3d
+}
+
+func makeKline(graphStyle graphStyle) *charts.Kline {
+	kline := charts.NewKLine()
+	kline.SetGlobalOptions(
+		charts.WithInitializationOpts(opts.Initialization{
+			Theme: graphStyle.theme,
+		}),
+		charts.WithTitleOpts(opts.Title{
+			Title: graphStyle.title,
+		}),
+		charts.WithXAxisOpts(opts.XAxis{
+			SplitNumber: 20,
+		}),
+		charts.WithYAxisOpts(opts.YAxis{
+			Scale: true,
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Start:      50,
+			End:        100,
+			XAxisIndex: []int{0},
+		}),
+		charts.WithTooltipOpts(opts.Tooltip{
+			Trigger: "axis",
+			Show:    true,
+		}),
+	)
+	return kline
 }

@@ -18,6 +18,8 @@ type Config struct {
 	Theme string `yaml:",omitempty"`
 	// selected names of the columns
 	ColumnToGraph map[string]GraphDefinition
+	// multiple files to be plotted
+	MultiFiles bool `yaml:",omitempty"`
 }
 
 type GraphDefinition struct {
