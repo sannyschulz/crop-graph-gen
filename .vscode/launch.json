@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Package",
+            "name": "Launch Single",
             "type": "go",
             "request": "launch",
             "mode": "auto",
@@ -15,6 +15,17 @@
                 "-input", "V-test-00001.csv", 
                 "-output", "results/V-test-00001.html", 
                 "-config", "config/V-test-00001.yml"]
+        },
+        {
+            "name": "Launch Multi",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "src/crop_graph_gen",
+            "cwd": "${workspaceFolder}/test_data/",
+            "args": [
+                "-batch", "test_batch.txt",
+                "-config", "config/multi.yml"]
         }
     ]
 }
