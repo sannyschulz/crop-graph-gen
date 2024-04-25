@@ -393,10 +393,9 @@ func GenerateGraph(page *components.Page, graphType GraphDefinition, theme strin
 			columns = append(columns, operationDefinition.Name)
 		}
 	} else {
-		columns = graphType.Columns
 		combinedColumnValues = values
 		if graphType.DateColumn != "" {
-			for i, column := range columns {
+			for i, column := range graphType.Columns {
 				if column == graphType.DateColumn {
 					// convert dates to string
 					dates = make([]string, len(combinedColumnValues[i]))
@@ -405,7 +404,9 @@ func GenerateGraph(page *components.Page, graphType GraphDefinition, theme strin
 					}
 					// remove date column from columns
 					combinedColumnValues = append(combinedColumnValues[:i], combinedColumnValues[i+1:]...)
-					columns = append(columns[:i], columns[i+1:]...)
+					columns = make([]string, 0, len(graphType.Columns))
+					columns = append(columns, graphType.Columns[:i]...)
+					columns = append(columns, graphType.Columns[i+1:]...)
 					break
 				}
 			}
