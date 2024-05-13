@@ -12,6 +12,8 @@ type Config struct {
 	InputType string
 	// number of header lines in the input file
 	NumHeader int
+	// date format of the input file
+	DateFormat string `yaml:",omitempty"`
 	// delimiter of the input file (e.g. tab, comma, space)
 	Delimiter string
 	// theme of the graph
@@ -59,9 +61,11 @@ func ReadConfigFile(configFile string) (*Config, error) {
 	config := Config{
 		InputType:     "HermesCSVOut",
 		NumHeader:     1,
+		DateFormat:    "02.01.2006",
 		Delimiter:     ",",
 		Theme:         "calk",
 		ColumnToGraph: map[string]GraphDefinition{},
+		MultiFiles:    false,
 	}
 	err = yaml.Unmarshal(fileData, &config)
 	if err != nil {
@@ -74,9 +78,10 @@ func ReadConfigFile(configFile string) (*Config, error) {
 // write default config file
 func WriteDefaultConfigFile(configFile string) error {
 	config := Config{
-		InputType: "HermesCSVOut",
-		NumHeader: 1,
-		Delimiter: ",",
+		InputType:  "HermesCSVOut",
+		NumHeader:  1,
+		Delimiter:  ",",
+		DateFormat: "02.01.2006",
 		ColumnToGraph: map[string]GraphDefinition{
 			"Graph1": {
 				GraphType:  "line",

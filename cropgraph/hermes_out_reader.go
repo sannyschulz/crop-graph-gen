@@ -47,7 +47,7 @@ func HermesCsvToGraph(inputFile string, config *Config, outputFile string) error
 			values[i] = rowData[column]
 		}
 		// add the graph to the page
-		page = GenerateGraph(page, graph, config.Theme, values)
+		page = GenerateGraph(page, graph, config.Theme, config.DateFormat, values)
 
 	}
 	// save the page to the output file
@@ -251,7 +251,7 @@ func MultiFileToGraph(inputFiles []string, config *Config, outputFile string) er
 					low:   low[i],
 					high:  high[i]})
 			}
-			kline := makeKline(graphStyle{title: graph.Title, theme: config.Theme})
+			kline := makeKline(graphStyle{title: graph.Title, theme: config.Theme, dateformat: config.DateFormat})
 			klineEntriesOpt := make([]opts.KlineData, 0, len(klineEntries))
 			for i := 0; i < len(klineEntries); i++ {
 				// entry to [4]float
@@ -361,7 +361,7 @@ func SavePage(page *components.Page, outfile string) error {
 }
 
 // graph generation
-func GenerateGraph(page *components.Page, graphType GraphDefinition, theme string, values [][]interface{}) *components.Page {
+func GenerateGraph(page *components.Page, graphType GraphDefinition, theme, dateformat string, values [][]interface{}) *components.Page {
 	outPage := page
 	// generate the graph
 	if len(values) == 0 {
@@ -414,8 +414,9 @@ func GenerateGraph(page *components.Page, graphType GraphDefinition, theme strin
 	}
 	// graph style
 	graphStyle := graphStyle{
-		title: graphType.Title,
-		theme: theme,
+		title:      graphType.Title,
+		theme:      theme,
+		dateformat: dateformat,
 	}
 
 	switch graphType.GraphType {
@@ -440,8 +441,9 @@ func GenerateGraph(page *components.Page, graphType GraphDefinition, theme strin
 }
 
 type graphStyle struct {
-	title string
-	theme string
+	title      string
+	theme      string
+	dateformat string
 }
 
 func extractKeys(valueList []interface{}) []int {
@@ -478,7 +480,7 @@ func themeRiverMultiData(keys []int, dates []string, graphStyle graphStyle, colu
 		}
 	}
 
-	themeRiver.AddSeries("themeRiver", generateItemTripple(dates, values, columns))
+	themeRiver.AddSeries("themeRiver", generateItemTripple(graphStyle.dateformat, dates, values, columns))
 	return themeRiver
 }
 
@@ -513,7 +515,7 @@ func generateItemBar3D(dates []string, values [][]interface{}, columns []string)
 	return items
 }
 
-func generateItemTripple(dates []string, values [][]interface{}, columns []string) []opts.ThemeRiverData {
+func generateItemTripple(dateFormatConfig string, dates []string, values [][]interface{}, columns []string) []opts.ThemeRiverData {
 
 	items := make([]opts.ThemeRiverData, 0, len(dates)*len(columns))
 
@@ -521,7 +523,7 @@ func generateItemTripple(dates []string, values [][]interface{}, columns []strin
 		for j, date := range dates {
 			// {"2015/11/28", 10, "DD"},
 			// convert current date string to new date format
-			dateTime, _ := time.Parse("02.01.2006", date)
+			dateTime, _ := time.Parse(dateFormatConfig, date)
 			dateFormated := dateTime.Format("2006/01/02")
 
 			valueAsFloat := AsFloat(values[i][j])
