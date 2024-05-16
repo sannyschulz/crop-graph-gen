@@ -370,6 +370,19 @@ func GenerateGraph(page *components.Page, graphType GraphDefinition, theme, date
 	// extract keys from the first column
 	keys := extractKeys(values[0])
 	var dates []string = nil
+	// create dates if the date column is given
+	if graphType.DateColumn != "" {
+		for i, column := range graphType.Columns {
+			if column == graphType.DateColumn {
+				// convert dates to string
+				dates = make([]string, len(keys))
+				for j, date := range values[i] {
+					dates[j] = date.(string)
+				}
+			}
+		}
+	}
+
 	var columns []string
 	var combinedColumnValues [][]interface{}
 	if graphType.ColumnView != nil {
@@ -397,11 +410,6 @@ func GenerateGraph(page *components.Page, graphType GraphDefinition, theme, date
 		if graphType.DateColumn != "" {
 			for i, column := range graphType.Columns {
 				if column == graphType.DateColumn {
-					// convert dates to string
-					dates = make([]string, len(combinedColumnValues[i]))
-					for j, date := range combinedColumnValues[i] {
-						dates[j] = date.(string)
-					}
 					// remove date column from columns
 					combinedColumnValues = append(combinedColumnValues[:i], combinedColumnValues[i+1:]...)
 					columns = make([]string, 0, len(graphType.Columns))
